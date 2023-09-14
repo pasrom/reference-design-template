@@ -1,0 +1,23 @@
+/*
+ * Copyright (c) 2023 Golioth, Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Set CONFIG_DEBUG_THREAD_INFO=y in the prj.conf for thread-aware debugging */
+/* Set CONFIG_USE_SEGGER_RTT=y in the prj.conf to enable RTT output in Ozone */
+
+void OnProjectLoad(void)
+{
+	Project.SetDevice("nRF9160_xxAA");
+	Project.SetTargetIF("SWD");
+	Project.SetTIFSpeed("4 MHz");
+	Project.AddSvdFile("$(InstallDir)/Config/CPU/Cortex-M33F.svd");
+	File.Open("$(ProjectDir)/../build/zephyr/zephyr.elf");
+	Project.SetOSPlugin("ZephyrPlugin.js");
+}
+
+void TargetDownload(void)
+{
+	Exec.Download("$(ProjectDir)/../build/zephyr/merged.hex");
+}
