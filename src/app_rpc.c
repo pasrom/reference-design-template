@@ -32,6 +32,7 @@ static void reboot_work_handler(struct k_work *work)
 }
 K_WORK_DEFINE(reboot_work, reboot_work_handler);
 
+#ifdef CONFIG_SOC_NRF9160
 static enum golioth_rpc_status on_get_network_info(zcbor_state_t *request_params_array,
 						   zcbor_state_t *response_detail_map,
 						   void *callback_arg)
@@ -40,6 +41,7 @@ static enum golioth_rpc_status on_get_network_info(zcbor_state_t *request_params
 
 	return GOLIOTH_RPC_OK;
 }
+#endif /* CONFIG_SOC_NRF9160 */
 
 static enum golioth_rpc_status on_set_log_level(zcbor_state_t *request_params_array,
 						zcbor_state_t *response_detail_map,
@@ -87,8 +89,7 @@ static enum golioth_rpc_status on_set_log_level(zcbor_state_t *request_params_ar
 }
 
 static enum golioth_rpc_status on_reboot(zcbor_state_t *request_params_array,
-					 zcbor_state_t *response_detail_map,
-					 void *callback_arg)
+					 zcbor_state_t *response_detail_map, void *callback_arg)
 {
 	/* Use work queue so this RPC can return confirmation to Golioth */
 	k_work_submit(&reboot_work);
@@ -106,13 +107,14 @@ static void rpc_log_if_register_failure(int err)
 int app_rpc_register(struct golioth_client *client)
 {
 
-
 	struct golioth_rpc *rpc = golioth_rpc_init(client);
 
 	int err;
 
+#ifdef CONFIG_SOC_NRF9160
 	err = golioth_rpc_register(rpc, "get_network_info", on_get_network_info, NULL);
 	rpc_log_if_register_failure(err);
+#endif /* CONFIG_SOC_NRF9160 */
 
 	err = golioth_rpc_register(rpc, "reboot", on_reboot, NULL);
 	rpc_log_if_register_failure(err);
