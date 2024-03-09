@@ -35,5 +35,10 @@ manifest:
       revision: v1.1.0
       url: https://github.com/golioth/zephyr-network-info
 
+    - name: sensirion_drivers
+      path: modules/sensirion_drivers
+      url: https://github.com/nobodyguy/sensirion_zephyr_drivers
+      revision: main
+
 self:
   path: app

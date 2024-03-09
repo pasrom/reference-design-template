@@ -11,6 +11,8 @@ LOG_MODULE_REGISTER(app_sensors, LOG_LEVEL_DBG);
 #include <golioth/stream.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
+#include <zephyr/drivers/sensor.h>
+#include <sensor/scd30/scd30.h>
 
 #include "app_sensors.h"
 
@@ -25,13 +27,15 @@ static struct golioth_client *client;
 /* Add Sensor structs here */
 
 /* Formatting string for sending sensor JSON to Golioth */
-#define JSON_FMT "{\"counter\":%d}"
+#define JSON_FMT		  "{\"counter\":%d,\"co2\":%.2f,\"temperature\":%.2f,\"humidity\":%.2f}"
+#define SCD30_SAMPLE_TIME_SECONDS 5U
+
+static const struct device *dev = DEVICE_DT_GET_ANY(sensirion_scd30);
 
 /* Callback for LightDB Stream */
 
 static void async_error_handler(struct golioth_client *client,
-				const struct golioth_response *response,
-				const char *path,
+				const struct golioth_response *response, const char *path,
 				void *arg)
 {
 	if (response->status != GOLIOTH_OK) {
@@ -46,6 +50,27 @@ void app_sensors_read_and_steam(void)
 {
 	int err;
 	char json_buf[256];
+	struct sensor_value co2_concentration;
+	struct sensor_value temperature;
+	struct sensor_value humidity;
+
+	int rc = sensor_sample_fetch(dev);
+	if (rc == 0) {
+		rc = sensor_channel_get(dev, SENSOR_CHAN_CO2, &co2_concentration);
+	}
+	if (rc == 0) {
+		rc = sensor_channel_get(dev, SENSOR_CHAN_AMBIENT_TEMP, &temperature);
+	}
+	if (rc == 0) {
+		rc = sensor_channel_get(dev, SENSOR_CHAN_HUMIDITY, &humidity);
+	}
+
+	if (rc == -ENODATA) {
+		LOG_INF("%s: no new measurment yet.", dev->name);
+		LOG_INF("Waiting for 1 second and retrying...");
+	} else if (rc != 0) {
+		LOG_INF("%s channel get: failed: %d", dev->name, rc);
+	}
 
 	IF_ENABLED(CONFIG_ALUDEL_BATTERY_MONITOR, (
 		read_and_report_battery(client);
@@ -58,18 +83,19 @@ void app_sensors_read_and_steam(void)
 	/* For this demo, we just send counter data to Golioth */
 	static uint8_t counter;
 
+	LOG_INF("%s: %.02f ppm %.02f degC %.02f %% cnt %u", dev->name,
+		sensor_value_to_float(&co2_concentration), sensor_value_to_float(&temperature),
+		sensor_value_to_float(&humidity), counter);
+
 	/* Send sensor data to Golioth */
 	/* For this demo we just fake it */
-	snprintk(json_buf, sizeof(json_buf), JSON_FMT, counter);
+	snprintk(json_buf, sizeof(json_buf), JSON_FMT, counter,
+		 sensor_value_to_float(&co2_concentration), sensor_value_to_float(&temperature),
+		 sensor_value_to_float(&humidity));
 	LOG_DBG("%s", json_buf);
 
-	err = golioth_stream_set_async(client,
-				       "sensor",
-				       GOLIOTH_CONTENT_TYPE_JSON,
-				       json_buf,
-				       strlen(json_buf),
-				       async_error_handler,
-				       NULL);
+	err = golioth_stream_set_async(client, "sensor", GOLIOTH_CONTENT_TYPE_JSON, json_buf,
+				       strlen(json_buf), async_error_handler, NULL);
 	if (err) {
 		LOG_ERR("Failed to send sensor data to Golioth: %d", err);
 	}
@@ -90,4 +116,19 @@ void app_sensors_read_and_steam(void)
 void app_sensors_init(struct golioth_client *work_client)
 {
 	client = work_client;
+	struct sensor_value sample_period = {
+		.val1 = SCD30_SAMPLE_TIME_SECONDS,
+	};
+
+	if (!device_is_ready(dev)) {
+		LOG_ERR("Could not get SCD30 device");
+		return;
+	}
+
+	int rc = sensor_attr_set(dev, SENSOR_CHAN_ALL, SCD30_SENSOR_ATTR_SAMPLING_PERIOD,
+				 &sample_period);
+	if (rc != 0) {
+		LOG_ERR("Failed to set sample period. (%d)", rc);
+		return;
+	}
 }

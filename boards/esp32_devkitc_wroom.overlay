@@ -32,3 +32,14 @@
 	};
 
 };
+
+&i2c0 {
+	// compatible = "espressif,esp32";
+	status = "okay";
+
+	scd30_0@61 {
+		compatible = "sensirion,scd30";
+		reg = <0x61>;
+		sample-period = <5>;
+	};
+};

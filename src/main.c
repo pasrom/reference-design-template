@@ -53,8 +53,7 @@ void wake_system_thread(void)
 	k_wakeup(_system_thread);
 }
 
-static void on_client_event(struct golioth_client *client,
-			    enum golioth_client_event event,
+static void on_client_event(struct golioth_client *client, enum golioth_client_event event,
 			    void *arg)
 {
 	bool is_connected = (event == GOLIOTH_CLIENT_EVENT_CONNECTED);
@@ -80,11 +79,10 @@ static void start_golioth_client(void)
 	/* Initialize DFU components */
 	golioth_fw_update_init(client, _current_version);
 
-
 	/*** Call Golioth APIs for other services in dedicated app files ***/
 
 	/* Observe State service data */
-	app_state_observe(client);
+	// app_state_observe(client);
 
 	/* Initialize app work */
 	app_sensors_init(client);
