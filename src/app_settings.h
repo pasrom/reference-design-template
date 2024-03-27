@@ -22,6 +22,9 @@
 #include <golioth/client.h>
 
 int32_t get_loop_delay_s(void);
+int32_t get_co2_offset_ppm(void);
+float get_temperature_offset_gc(void);
+float get_humidity_offset_p(void);
 int app_settings_register(struct golioth_client *client);
 
 #endif /* __APP_SETTINGS_H__ */

@@ -15,6 +15,7 @@ LOG_MODULE_REGISTER(app_sensors, LOG_LEVEL_DBG);
 #include <sensor/scd30/scd30.h>
 
 #include "app_sensors.h"
+#include "app_settings.h"
 
 #ifdef CONFIG_LIB_OSTENTUS
 #include <libostentus.h>
@@ -82,16 +83,14 @@ void app_sensors_read_and_steam(void)
 
 	/* For this demo, we just send counter data to Golioth */
 	static uint8_t counter;
-
-	LOG_INF("%s: %.02f ppm %.02f degC %.02f %% cnt %u", dev->name,
-		sensor_value_to_float(&co2_concentration), sensor_value_to_float(&temperature),
-		sensor_value_to_float(&humidity), counter);
+	float co2_value = sensor_value_to_float(&co2_concentration) + get_co2_offset_ppm();
+	float temperature_value = sensor_value_to_float(&temperature) + get_temperature_offset_gc();
+	float humidity_value = sensor_value_to_float(&humidity) + get_humidity_offset_p();
 
 	/* Send sensor data to Golioth */
 	/* For this demo we just fake it */
-	snprintk(json_buf, sizeof(json_buf), JSON_FMT, counter,
-		 sensor_value_to_float(&co2_concentration), sensor_value_to_float(&temperature),
-		 sensor_value_to_float(&humidity));
+	snprintf(json_buf, sizeof(json_buf), JSON_FMT, counter, co2_value, temperature_value,
+		 humidity_value);
 	LOG_DBG("%s", json_buf);
 
 	err = golioth_stream_set_async(client, "sensor", GOLIOTH_CONTENT_TYPE_JSON, json_buf,
