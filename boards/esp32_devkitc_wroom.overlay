@@ -12,6 +12,7 @@
 	aliases {
 		golioth-led = &led0;
 		sw1 = &button0;
+		sensirion-hal-i2c = &i2c1;
 	};
 
 	leds {
@@ -42,4 +43,25 @@
 		reg = <0x61>;
 		sample-period = <5>;
 	};
+};
+
+&pinctrl {
+	i2c1_default: i2c1_default {
+		group1 {
+			pinmux = <I2C1_SDA_GPIO4>,
+				 <I2C1_SCL_GPIO5>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	sda-gpios = <&gpio0 4 GPIO_OPEN_DRAIN>;
+	scl-gpios = <&gpio0 5 GPIO_OPEN_DRAIN>;
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-names = "default";
 };

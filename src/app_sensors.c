@@ -15,6 +15,9 @@ LOG_MODULE_REGISTER(app_sensors, LOG_LEVEL_DBG);
 #include <sensor/scd30/scd30.h>
 
 #include "app_sensors.h"
+#ifdef CONFIG_SPS30
+#include "sensors.h"
+#endif
 #include "app_settings.h"
 
 #ifdef CONFIG_LIB_OSTENTUS
@@ -28,7 +31,16 @@ static struct golioth_client *client;
 /* Add Sensor structs here */
 
 /* Formatting string for sending sensor JSON to Golioth */
-#define JSON_FMT		  "{\"counter\":%d,\"co2\":%.2f,\"temperature\":%.2f,\"humidity\":%.2f}"
+#ifdef CONFIG_SPS30
+#define JSON_FMT                                                                                   \
+	"{\"counter\":%d,\"co2\":%.2f,\"temperature\":%.2f,\"humidity\":%.2f,\"mc_1p0\":%f,\"mc_"  \
+	"2p5\":%f,\"mc_4p0\":%f,\"mc_10p0\":%f,\"nc_0p5\":%f,\"nc_1p0\":%f,\"nc_2p5\":%f,\"nc_"    \
+	"4p0\":%f,\"nc_10p0\":%f,\"tps\":%f}"
+static struct sps30_sensor_measurement sps30_sm;
+#else /* CONFIG_SPS30 */
+#define JSON_FMT "{\"counter\":%d,\"co2\":%.2f,\"temperature\":%.2f,\"humidity\":%.2f}"
+#endif /* CONFIG_SPS30 */
+
 #define SCD30_SAMPLE_TIME_SECONDS 5U
 
 static const struct device *dev = DEVICE_DT_GET_ANY(sensirion_scd30);
@@ -87,10 +99,44 @@ void app_sensors_read_and_steam(void)
 	float temperature_value = sensor_value_to_float(&temperature) + get_temperature_offset_gc();
 	float humidity_value = sensor_value_to_float(&humidity) + get_humidity_offset_p();
 
+#ifdef CONFIG_SPS30
+	/* Read the PM sensor */
+	err = sps30_sensor_read(&sps30_sm);
+	if (err) {
+		LOG_ERR("Failed to read from PM Sensor SPS30: %d", err);
+		// return;
+	} else {
+		LOG_DBG("sps30: "
+			"PM1.0=%f μg/m³, PM2.5=%f μg/m³, "
+			"PM4.0=%f μg/m³, PM10.0=%f μg/m³, "
+			"NC0.5=%f #/cm³, NC1.0=%f #/cm³, "
+			"NC2.5=%f #/cm³, NC4.0=%f #/cm³, "
+			"NC10.0=%f #/cm³, Typical Particle Size=%f μm",
+			sensor_value_to_float(&sps30_sm.mc_1p0),
+			sensor_value_to_float(&sps30_sm.mc_2p5),
+			sensor_value_to_float(&sps30_sm.mc_4p0),
+			sensor_value_to_float(&sps30_sm.mc_10p0),
+			sensor_value_to_float(&sps30_sm.nc_0p5),
+			sensor_value_to_float(&sps30_sm.nc_1p0),
+			sensor_value_to_float(&sps30_sm.nc_2p5),
+			sensor_value_to_float(&sps30_sm.nc_4p0),
+			sensor_value_to_float(&sps30_sm.nc_10p0),
+			sensor_value_to_float(&sps30_sm.typical_particle_size));
+	}
+
+	snprintf(json_buf, sizeof(json_buf), JSON_FMT, counter, co2_value, temperature_value,
+		 humidity_value, sensor_value_to_float(&sps30_sm.mc_1p0),
+		 sensor_value_to_float(&sps30_sm.mc_2p5), sensor_value_to_float(&sps30_sm.mc_4p0),
+		 sensor_value_to_float(&sps30_sm.mc_10p0), sensor_value_to_float(&sps30_sm.nc_0p5),
+		 sensor_value_to_float(&sps30_sm.nc_1p0), sensor_value_to_float(&sps30_sm.nc_2p5),
+		 sensor_value_to_float(&sps30_sm.nc_4p0), sensor_value_to_float(&sps30_sm.nc_10p0),
+		 sensor_value_to_float(&sps30_sm.typical_particle_size));
+#else
 	/* Send sensor data to Golioth */
 	/* For this demo we just fake it */
 	snprintf(json_buf, sizeof(json_buf), JSON_FMT, counter, co2_value, temperature_value,
 		 humidity_value);
+#endif
 	LOG_DBG("%s", json_buf);
 
 	err = golioth_stream_set_async(client, "sensor", GOLIOTH_CONTENT_TYPE_JSON, json_buf,

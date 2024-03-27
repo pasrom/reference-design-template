@@ -33,6 +33,8 @@ LOG_MODULE_REGISTER(golioth_rd_template, LOG_LEVEL_DBG);
 #include <modem/modem_info.h>
 #endif
 
+#include "sensors.h"
+
 /* Current firmware version; update in prj.conf or via build argument */
 static const char *_current_version = CONFIG_MCUBOOT_IMGTOOL_SIGN_VERSION;
 
@@ -245,6 +247,14 @@ int main(void)
 		/* Start Ostentus slideshow with 30 second delay between slides */
 		slideshow(30000);
 	));
+
+#ifdef CONFIG_SPS30
+	/* Initialize PM sensor */
+	err = sps30_sensor_init();
+	if (err) {
+		LOG_ERR("sps30_sensor_init errored: %d", err);
+	}
+#endif /* CONFIG_SPS30 */
 
 	while (true) {
 		app_sensors_read_and_steam();

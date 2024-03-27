@@ -13,6 +13,12 @@ config DNS_SERVER1
 
 endif # DNS_RESOLVER
 
+config SPS30
+    bool "Enable SPS30 sensor support"
+    default n
+    help
+        This option enables support for the SPS30 Particulate Matter sensor.
+
 rsource "src/battery_monitor/Kconfig"
 
 source "Kconfig.zephyr"
