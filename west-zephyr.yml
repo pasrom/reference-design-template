@@ -7,13 +7,12 @@ manifest:
   projects:
     - name: golioth
       path: modules/lib/golioth-firmware-sdk
-      revision: v0.10.0
+      revision: v0.11.1
       url: https://github.com/golioth/golioth-firmware-sdk.git
       west-commands: scripts/west-commands.yml
       submodules: true
       import:
         file: west-zephyr.yml
-        path-prefix: deps
         name-allowlist:
           - zephyr
           - cmsis
@@ -50,3 +49,5 @@ manifest:
       revision: ef781982b917249ebdafd30673b281b7c3f0764a
       url: https://github.com/golioth/sensirion-embedded-sps.git
 
+  self:
+    path: app
