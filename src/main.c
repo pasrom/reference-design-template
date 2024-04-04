@@ -220,6 +220,14 @@ int main(void)
 		return err;
 	}
 
+#ifdef CONFIG_SPS30
+	/* Initialize PM sensor */
+	err = sps30_sensor_init();
+	if (err) {
+		LOG_ERR("sps30_sensor_init errored: %d", err);
+	}
+#endif /* CONFIG_SPS30 */
+
 	gpio_init_callback(&button_cb_data, button_pressed, BIT(user_btn.pin));
 	gpio_add_callback(user_btn.port, &button_cb_data);
 
@@ -247,14 +255,6 @@ int main(void)
 		/* Start Ostentus slideshow with 30 second delay between slides */
 		slideshow(30000);
 	));
-
-#ifdef CONFIG_SPS30
-	/* Initialize PM sensor */
-	err = sps30_sensor_init();
-	if (err) {
-		LOG_ERR("sps30_sensor_init errored: %d", err);
-	}
-#endif /* CONFIG_SPS30 */
 
 	while (true) {
 		app_sensors_read_and_steam();
