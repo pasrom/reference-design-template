@@ -1,0 +1,74 @@
+/*
+ * Copyright (c) 2023 Golioth, Inc.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+// #include "nrf_dk_common.dtsi"
+
+/ {
+	aliases {
+		golioth-led = &blue_led;
+		sw1 = &button0;
+		sensirion-hal-i2c = &i2c2;
+	};
+};
+
+
+&pinctrl {
+	i2c2_default: i2c2_default {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 0, 21)>,
+				<NRF_PSEL(TWIM_SCL, 0, 22)>;
+		};
+	};
+
+	i2c2_sleep: i2c2_sleep {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 0, 21)>,
+				<NRF_PSEL(TWIM_SCL, 0, 22)>;
+			low-power-enable;
+		};
+	};
+};
+
+&i2c1 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-1 = <&i2c1_sleep>;
+	pinctrl-names = "default", "sleep";
+	pcf85063a@51 {
+		compatible = "nxp,pcf85063a";
+		reg = <0x51>;
+	};
+
+	lis2dh: lis2dh@18 {
+		compatible = "st,lis2dh";
+		reg = <0x18>;
+		irq-gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
+		disconnect-sdo-sa0-pull-up;
+	};
+
+	scd30_0@61 {
+		compatible = "sensirion,scd30";
+		reg = <0x61>;
+		sample-period = <5>;
+		altitude = <0>;
+		temperature-offset = <0>;
+	};
+};
+
+&spi2 {
+	status = "disabled";
+};
+
+&i2c2 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c2_default>;
+	pinctrl-1 = <&i2c2_sleep>;
+	pinctrl-names = "default", "sleep";
+};
