@@ -47,8 +47,8 @@ manifest:
 
     - name: sensirion_drivers
       path: modules/sensirion_drivers
-      url: https://github.com/nobodyguy/sensirion_zephyr_drivers
-      revision: main
+      url: https://github.com/pasrom/sensirion_zephyr_drivers
+      revision: scd30-calibration
 
     - name: sensirion-embedded-common
       path: app/external/sensirion/embedded-common
