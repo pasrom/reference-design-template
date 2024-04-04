@@ -21,9 +21,11 @@
  */
 
 #include <golioth/client.h>
+#include <stdint.h>
 
 void app_sensors_init(struct golioth_client *work_client);
 void app_sensors_read_and_steam(void);
+void app_sensors_co2_calibrate(int32_t value);
 
 #define LABEL_UP_COUNTER "Counter"
 #define LABEL_DN_COUNTER "Anti-counter"

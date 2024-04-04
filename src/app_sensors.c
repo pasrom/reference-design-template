@@ -177,3 +177,16 @@ void app_sensors_init(struct golioth_client *work_client)
 		return;
 	}
 }
+
+void app_sensors_co2_calibrate(int32_t value)
+{
+	struct sensor_value calibration = {
+		.val1 = value,
+	};
+	int err = sensor_attr_set(dev, SENSOR_CHAN_ALL, SCD30_SENSOR_SET_FORCED_RECALIBRATION,
+				  &calibration);
+	if (err != 0) {
+		LOG_ERR("Failed to get calib target. (%d)", err);
+		return;
+	}
+}
